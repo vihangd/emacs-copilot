@@ -77,7 +77,7 @@ If NO-INPUT is non-nil, do not use the buffer or selection content as input."
          (emacs-copilot-confirm-and-eval text))))))
 
 (defun emacs-copilot ()
-  "Ask the user for a task and generate Emacs Lisp code using GPT-3.5."
+  "Ask the user for a task and generate Emacs Lisp code using OpenAI API."
   (interactive)
   (let ((task (read-string "Enter the task you want to generate code for: ")))
     (emacs-copilot-generate-code task)))
