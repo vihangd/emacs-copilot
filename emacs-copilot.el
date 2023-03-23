@@ -1,7 +1,7 @@
 ;;; emacs-copilot.el --- Emacs Copilot: AI-driven code generation and editing -*- lexical-binding: t -*-
 
 ;; Author: Vihang D
-;; URL: https://github.com/yourusername/emacs-copilot
+;; URL: https://github.com/vihangd/emacs-copilot
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "25.1"))
 
