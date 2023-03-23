@@ -86,3 +86,5 @@ If NO-INPUT is non-nil, do not use the buffer or selection content as input."
   "Generate content based on given instruction"
   (interactive "sEnter an instruction (or leave empty for default): ")
   (emacs-copilot-process instruction t))
+
+(provide 'emacs-copilot)
