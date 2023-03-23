@@ -1,3 +1,19 @@
+;;; emacs-copilot.el --- Emacs Copilot: AI-driven code generation and editing -*- lexical-binding: t -*-
+
+;; Author: Vihang D
+;; URL: https://github.com/yourusername/emacs-copilot
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "25.1"))
+
+;;; Commentary:
+
+;; Emacs Copilot is a package that provides AI-driven code generation
+;; and editing capabilities using OpenAI's API. It includes
+;; functions to generate Emacs Lisp code, rewrite the content of a buffer
+;; or region, and insert code based on a given instruction.
+
+;;; Code:
+
 (require 'cl)
 (require 'request)
 (require 'request-deferred)
