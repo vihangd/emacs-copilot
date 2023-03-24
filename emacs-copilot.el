@@ -33,7 +33,7 @@
                           ("prompt" . ,prompt)
                           ("max_tokens" . 2000)
                           ("n" . 1)
-                          ("temperature" . 0.5)))
+                          ("temperature" . 0.3)))
      :headers `(("Content-Type" . "application/json")
                 ("Authorization" . ,(format "Bearer %s" emacs-copilot-api-key)))
      :parser 'json-read
