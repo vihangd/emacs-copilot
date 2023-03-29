@@ -2,7 +2,7 @@
 
 ;; Author: Vihang D
 ;; URL: https://github.com/vihangd/emacs-copilot
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "25.1"))
 
 ;;; Commentary:
@@ -17,57 +17,55 @@
 (require 'cl)
 (require 'request)
 (require 'request-deferred)
+(require 'magit)
 
 (defcustom emacs-copilot-api-key ""
   "Your OpenAI API key."
   :type 'string
   :group 'emacs-copilot)
 
-(defun emacs-copilot-api-request (prompt callback)
-  "Make an API request to OpenAI with PROMPT and process the response with CALLBACK."
-  (lexical-let ((callback callback))
-    (request-deferred
-     "https://api.openai.com/v1/completions"
-     :type "POST"
-     :data (json-encode `(("model" . "text-davinci-003")
-                          ("prompt" . ,prompt)
-                          ("max_tokens" . 2000)
-                          ("n" . 1)
-                          ("temperature" . 0.3)))
-     :headers `(("Content-Type" . "application/json")
-                ("Authorization" . ,(format "Bearer %s" emacs-copilot-api-key)))
-     :parser 'json-read
-     :success (cl-function
-               (lambda (&key data &allow-other-keys)
-                ; (message "Response data: %S" data) ; Add this line to 
-                 (funcall callback data)))
-     :error (cl-function
-             (lambda (&key error-thrown &allow-other-keys&rest _)
-               (message "Error generating code: %S" error-thrown))))))
+(defun emacs-copilot-api-request (instruction callback)
+  "Make an API request to OpenAI with the given INSTRUCTION and CALLBACK using request-deferred."
+  (let ((headers `(("Content-Type" . "application/json")
+                   ("Authorization" . ,(concat "Bearer " emacs-copilot-api-key))))
+        (data (json-encode `(("model" . "text-davinci-003")
+                             ("prompt" . ,instruction)
+                             ("max_tokens" . 2000)
+                             ("n" . 1)
+                             ("temperature" . 0.3)))))
+    (request-deferred "https://api.openai.com/v1/completions"
+                      :type "POST"
+                      :headers headers
+                      :data data
+                      :parser 'json-read
+                      :success (cl-function
+                                (lambda (&key data &allow-other-keys)
+                                  (let* ((choices (cdr (assoc 'choices data)))
+                                         (choice (elt choices 0))
+                                         (text (cdr (assoc 'text choice))))
+                                    (funcall callback text))))
+                      :error (cl-function
+                              (lambda (&key error-thrown &allow-other-keys)
+                                (message "Error: %S" error-thrown)))
+                      )))
 
-(defun emacs-copilot-process (instruction &optional no-input)
+
+(defun emacs-copilot-process (instruction &optional no-input callback)
   "Process the entire buffer or the selected region based on the INSTRUCTION provided.
-If NO-INPUT is non-nil, do not use the buffer or selection content as input."
+If NO-INPUT is non-nil, do not use the buffer or selection content as input.
+When CALLBACK is provided, call it with the resulting text."
   (interactive "sEnter an instruction (or leave empty for default): ")
-  (let* ((input (if no-input
-                    ""
-                  (if (use-region-p)
-                      (buffer-substring (region-beginning) (region-end))
-                    (buffer-string))))
+  (let* ((input (if no-input "" (if (use-region-p) (buffer-substring (region-beginning) (region-end)) (buffer-string))))
          (default-instruction "Fix the grammar and rewrite the following text:")
-         (final-instruction (if (string-empty-p instruction)
-                                (concat default-instruction "\n" input)
-                              (concat instruction "\n" input))))
-    (emacs-copilot-api-request
-     final-instruction
-     (lambda (data)
-       (let* ((choices (cdr (assoc 'choices data)))
-              (choice (elt choices 0))
-              (text (cdr (assoc 'text choice))))
-         (with-current-buffer (get-buffer-create "*GPT-Rewritten*")
-           (erase-buffer)
-           (insert text)
-           (pop-to-buffer (current-buffer))))))))
+         (final-instruction (if (string-empty-p instruction) (concat default-instruction "\n" input) (concat instruction "\n" input))))
+    (emacs-copilot-api-request final-instruction
+                               (lambda (text)
+                                 (if callback
+                                     (funcall callback text)
+                                   (with-current-buffer (get-buffer-create "*GPT-Rewritten*")
+                                     (erase-buffer)
+                                     (insert text)
+                                     (pop-to-buffer (current-buffer))))))))
 
 
 (defun emacs-copilot-confirm-and-eval (code)
@@ -87,10 +85,7 @@ If NO-INPUT is non-nil, do not use the buffer or selection content as input."
     (emacs-copilot-api-request
      prompt
      (lambda (data)
-       (let* ((choices (cdr (assoc 'choices data)))
-              (choice (elt choices 0))
-              (text (cdr (assoc 'text choice))))
-         (emacs-copilot-confirm-and-eval text))))))
+        (emacs-copilot-confirm-and-eval data)))))
 
 (defun emacs-copilot ()
   "Ask the user for a task and generate Emacs Lisp code using OpenAI API."
@@ -102,5 +97,30 @@ If NO-INPUT is non-nil, do not use the buffer or selection content as input."
   "Generate content based on given instruction"
   (interactive "sEnter an instruction (or leave empty for default): ")
   (emacs-copilot-process instruction t))
+
+(defun emacs-copilot-commit ()
+  "Generate a commit message for the staged changes in the current project using emacs-copilot-process."
+  (interactive)
+  (let* (
+         (staged-diff (shell-command-to-string "git --no-pager diff --staged"))
+         (prompt (concat "Generate a git commit message with first line being a succinct summary of all the changes with no more than 50 characters then separated by 2 new lines give the summary of all the changes in lines where each line is no longer than 72 characters in the following commit :\n\n" staged-diff)))
+    (emacs-copilot-process
+     prompt
+     nil
+     (lambda (commit-message)
+       (if (stringp commit-message)
+           (progn
+             (magit-commit-create)
+             (let ((counter 0))
+               (while (and (not (get-buffer "COMMIT_EDITMSG")) (< counter 100))
+                 (sleep-for 0.1)
+                 (setq counter (1+ counter))))
+             (if (get-buffer "COMMIT_EDITMSG")
+                 (with-current-buffer (get-buffer "COMMIT_EDITMSG")
+                   (goto-char (point-min))
+                   (insert commit-message))
+               (error "Error: COMMIT_EDITMSG buffer not available after 10 seconds.")))
+         (message "Error: Invalid commit message received from API."))))))
+
 
 (provide 'emacs-copilot)
