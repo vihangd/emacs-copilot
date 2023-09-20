@@ -28,7 +28,7 @@
   "Make an API request to OpenAI with the given INSTRUCTION and CALLBACK using request-deferred."
   (let ((headers `(("Content-Type" . "application/json")
                    ("Authorization" . ,(concat "Bearer " emacs-copilot-api-key))))
-        (data (json-encode `(("model" . "text-davinci-003")
+        (data (json-encode `(("model" . "gpt-3.5-turbo-instruct")
                              ("prompt" . ,instruction)
                              ("max_tokens" . 2000)
                              ("n" . 1)
