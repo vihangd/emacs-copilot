@@ -81,7 +81,7 @@ When CALLBACK is provided, call it with the resulting text."
 
 (defun emacs-copilot-generate-code (task)
   "Generate Emacs Lisp code using OpenAI API with the given TASK."
-  (let ((prompt (concat "Generate emacslisp code which can be evaluated for the following task: " task)))
+  (let ((prompt (concat "Generate emacslisp code which can be evaluated as it is for the following task (Note: do not add any quotes): " task)))
     (emacs-copilot-api-request
      prompt
      (lambda (data)
