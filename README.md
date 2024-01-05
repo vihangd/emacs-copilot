@@ -12,7 +12,14 @@ Emacs Copilot is an Emacs package that uses the OpenAI API to generate Emacs Lis
 
 \```emacs-lisp
 (require 'emacs-copilot)
-(setq emacs-copilot-api-key "your_openai_api_key")
+
+;; if you want to openai key 
+(setq emacs-copilot-api-provider 'openai)
+(setq emacs-copilot-openai-api-key "openai key")
+
+;; if you want to use gemini
+(setq emacs-copilot-api-provider 'google-gemini)
+(setq emacs-copilot-google-gemini-api-key "")
 \```
 
 Replace `"your_openai_api_key"` with your actual OpenAI API key.
