@@ -14,40 +14,86 @@
 
 ;;; Code:
 
-(require 'cl)
+(require 'cl-lib)
 (require 'request)
 (require 'request-deferred)
 (require 'magit)
+
 
 (defcustom emacs-copilot-api-key ""
   "Your OpenAI API key."
   :type 'string
   :group 'emacs-copilot)
 
+(defcustom emacs-copilot-api-provider 'openai
+  "API provider to use for generating content. Either 'openai' or 'google-gemini'."
+  :type '(choice (const :tag "OpenAI" openai)
+                 (const :tag "Google Gemini" google-gemini))
+  :group 'emacs-copilot)
+
+(defcustom emacs-copilot-openai-api-key ""
+  "Your OpenAI API key."
+  :type 'string
+  :group 'emacs-copilot)
+
+(defcustom emacs-copilot-google-gemini-api-key ""
+  "Your Google Gemini API key."
+  :type 'string
+  :group 'emacs-copilot)
+
+
+(defun emacs-copilot-make-api-request (provider instruction callback)
+  "Make an API request to the selected PROVIDER with the given INSTRUCTION and CALLBACK."
+  (cl-case provider
+    (openai
+     (let ((headers `(("Content-Type" . "application/json")
+                      ("Authorization" . ,(concat "Bearer " emacs-copilot-openai-api-key))))
+           (data (json-encode `(("model" . "gpt-3.5-turbo-instruct")
+                                ("prompt" . ,instruction)
+                                ("max_tokens" . 2000)
+                                ("n" . 1)
+                                ("temperature" . 0.3)))))
+       (request-deferred "https://api.openai.com/v1/completions"
+                         :type "POST"
+                         :headers headers
+                         :data data
+                         :parser 'json-read
+                         :success (cl-function
+                                   (lambda (&key data &allow-other-keys)
+                                     (let* ((choices (cdr (assoc 'choices data)))
+                                            (choice (elt choices 0))
+                                            (text (cdr (assoc 'text choice))))
+                                       (funcall callback text))))
+                         :error (cl-function
+                                 (lambda (&key error-thrown &allow-other-keys)
+                                   (message "Error: %S" error-thrown))))))
+    (google-gemini
+     (let ((headers `(("Content-Type" . "application/json")
+                      ))
+           (data (json-encode `(("contents" . [((("parts" . [((("text" . ,instruction)))])))])))))
+       ;;
+       (request-deferred (concat "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" emacs-copilot-google-gemini-api-key)
+                         :type "POST"
+                         :headers headers
+                         :data data
+                         :parser 'json-read
+                         :success (cl-function
+                                   (lambda (&key data &allow-other-keys)
+                                     (let* ((candidates (cdr (assoc 'candidates data)))
+                                            (candidate (elt candidates 0))
+                                            (content (cdr (assoc 'content candidate)))
+                                            (parts (cdr (assoc 'parts content)))
+                                            (part (elt parts 0))
+                                            (text (cdr (assoc 'text part))))
+                                       (funcall callback text))))
+                         :error (cl-function
+                                 (lambda (&key error-thrown &allow-other-keys)
+                                   (message "Error: %S" error-thrown))))))))
+
 (defun emacs-copilot-api-request (instruction callback)
-  "Make an API request to OpenAI with the given INSTRUCTION and CALLBACK using request-deferred."
-  (let ((headers `(("Content-Type" . "application/json")
-                   ("Authorization" . ,(concat "Bearer " emacs-copilot-api-key))))
-        (data (json-encode `(("model" . "gpt-3.5-turbo-instruct")
-                             ("prompt" . ,instruction)
-                             ("max_tokens" . 2000)
-                             ("n" . 1)
-                             ("temperature" . 0.3)))))
-    (request-deferred "https://api.openai.com/v1/completions"
-                      :type "POST"
-                      :headers headers
-                      :data data
-                      :parser 'json-read
-                      :success (cl-function
-                                (lambda (&key data &allow-other-keys)
-                                  (let* ((choices (cdr (assoc 'choices data)))
-                                         (choice (elt choices 0))
-                                         (text (cdr (assoc 'text choice))))
-                                    (funcall callback text))))
-                      :error (cl-function
-                              (lambda (&key error-thrown &allow-other-keys)
-                                (message "Error: %S" error-thrown)))
-                      )))
+  "A wrapper function to make an API request with the given INSTRUCTION and CALLBACK."
+  (emacs-copilot-make-api-request emacs-copilot-api-provider instruction callback))
+
 
 
 (defun emacs-copilot-process (instruction &optional no-input callback)
