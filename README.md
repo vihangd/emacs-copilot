@@ -1,6 +1,6 @@
 # Emacs Copilot
 
-Emacs Copilot is an Emacs package that uses the OpenAI API to generate Emacs Lisp code and content based on given instructions. This package offers a convenient way to create code snippets or analyze text directly within Emacs.
+Emacs Copilot is an Emacs package that uses the OpenAI API or Google Gemini to generate Emacs Lisp code and content based on given instructions. This package offers a convenient way to create code snippets or analyze text directly within Emacs.
 
 ## Installation
 
