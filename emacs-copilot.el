@@ -168,5 +168,24 @@ When CALLBACK is provided, call it with the resulting text."
                (error "Error: COMMIT_EDITMSG buffer not available after 10 seconds.")))
          (message "Error: Invalid commit message received from API."))))))
 
+(defun emacs-copilot-inline-assist (instruction)
+  "Replace the selected region in the current buffer with processed content.
+   If no region is selected, append the processed content to the current line.
+   The content is processed based on the given INSTRUCTION."
+  (interactive "sEnter an instruction (or leave empty for default): ")
+  (let* ((start (if (use-region-p) (region-beginning) (line-end-position)))
+         (end (if (use-region-p) (region-end) (line-end-position)))
+         (region-content (buffer-substring start end)))
+    (emacs-copilot-process
+     (concat  "Generate code following instruction, ensure that the output only has code and comments.\n" instruction "\n" region-content)
+     nil
+     (lambda (processed-content)
+       (if (stringp processed-content)
+           (progn
+             (delete-region start end)
+             (goto-char start)
+             (insert processed-content)
+             (insert "\n"))
+         (message "Error: Invalid processed content received from API."))))))
 
 (provide 'emacs-copilot)
