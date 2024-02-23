@@ -10,7 +10,7 @@ Emacs Copilot is an Emacs package that uses the OpenAI API or Google Gemini to g
 
 3. Add the following lines to your Emacs configuration:
 
-\```emacs-lisp
+```emacs-lisp
 (require 'emacs-copilot)
 
 ;; if you want to openai key 
@@ -20,7 +20,7 @@ Emacs Copilot is an Emacs package that uses the OpenAI API or Google Gemini to g
 ;; if you want to use gemini
 (setq emacs-copilot-api-provider 'google-gemini)
 (setq emacs-copilot-google-gemini-api-key "")
-\```
+```
 
 Replace `"your_openai_api_key"` with your actual OpenAI API key.
 
@@ -36,9 +36,9 @@ Emacs Copilot provides the following interactive functions:
 
 To generate Emacs Lisp code for a specific task, call the `emacs-copilot` function:
 
-\```
+```
 M-x emacs-copilot
-\```
+```
 
 You will be prompted to enter the task description. The generated code will appear in a new buffer, and you will be asked if you want to evaluate it.
 
@@ -46,9 +46,9 @@ You will be prompted to enter the task description. The generated code will appe
 
 To generate content based on a given instruction, call the `emacs-copilot-generate` function:
 
-\```
+```
 M-x emacs-copilot-generate
-\```
+```
 
 You will be prompted to enter the instruction. The generated content will appear in a new buffer called `*GPT-Rewritten*`.
 
@@ -56,9 +56,9 @@ You will be prompted to enter the instruction. The generated content will appear
 
 To process the entire buffer or the selected region based on a provided instruction, call the `emacs-copilot-process` function:
 
-\```
+```
 M-x emacs-copilot-process
-\```
+```
 
 You will be prompted to enter the instruction. The processed content will appear in a new buffer called `*GPT-Rewritten*`.
 
@@ -66,9 +66,9 @@ You will be prompted to enter the instruction. The processed content will appear
 
 You can customize the `emacs-copilot-api-key` variable to set your OpenAI API key:
 
-\```emacs-lisp
+```emacs-lisp
 (setq emacs-copilot-api-key "your_openai_api_key")
-\```
+```
 
 Replace `"your_openai_api_key"` with your actual OpenAI API key.
 
